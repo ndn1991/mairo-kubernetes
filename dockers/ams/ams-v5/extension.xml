@@ -1,0 +1,154 @@
+<mario>
+	<name>ams-v5</name>
+
+	<datasources>
+		<sql>
+			<name>ams-mysql-datasource</name>
+			<variables>
+				<variable name="url" type="string">jdbc:mysql://${MYSQL_HOST_PORT}/${MYSQL_DATABASE}</variable>
+				<variable name="username" type="string">${MYSQL_USER}</variable>
+				<variable name="password" type="string">${MYSQL_PASSWORD}</variable>
+
+				<variable name="driverClassName" type="string">com.mysql.cj.jdbc.Driver
+				</variable>
+				<variable name="minPool" type="integer">4</variable>
+				<variable name="maxPool" type="integer">32</variable>
+				<!-- <variable name="maxSize" type="integer"></variable> -->
+				<variable name="idleTimeout" type="integer">10000</variable>
+				<variable name="loginTimeout" type="integer">10000</variable>
+			</variables>
+		</sql>
+
+		<hazelcast>
+			<name>ams-hazelcast</name>
+			<member>true</member>
+			<config>conf/hazelcast.xml</config>
+			<lazyinit>true</lazyinit>
+			<initializers>
+				<entry>ams-handler</entry> <!-- register ams-handler as an initializer for this hazelcast instance -->
+			</initializers>
+		</hazelcast>
+	</datasources>
+
+	<zeromq>
+		<registry>
+			<name>ams-zeromq-registry</name>
+			<numiothreads>4</numiothreads>
+		</registry>
+	</zeromq>
+	
+	 <servers>
+        <rabbitmq>
+            <name>gaia_ams_rabbitmq_connection_pool</name>
+            <endpoint>
+                ${RABBIT_SERVER}
+            </endpoint>
+            <credential>
+                <username>${RABBIT_USER}</username>
+                <password>${RABBIT_PASSWORD}</password>
+            </credential>
+            <autoreconnect>true</autoreconnect>
+        </rabbitmq>
+    </servers>
+
+	<gateways>
+		<zeromq>
+			<type>RPC</type>
+			<name>ams-zeromq-write-gateway</name>
+			<registry>ams-zeromq-registry</registry>
+			<endpoint>tcp://0.0.0.0:8888</endpoint> <!-- environment will be injected in deployment phase -->
+			<queueSize>1024</queueSize>
+			<numHandlers>8</numHandlers>
+			<numSenders>2</numSenders>
+			<messageBufferSize>32768</messageBufferSize>
+			<bufferCapacity>524288</bufferCapacity>
+			<hwm>4096</hwm>
+			<respondedCountEnabled>true</respondedCountEnabled>
+			<receivedCountEnabled>true</receivedCountEnabled>
+		</zeromq>
+	</gateways>
+
+	<producers>
+		<kafka>
+			<name>ams-kafka-transaction-log-producer</name>
+			<config>conf/ams-kafka-transaction-log-producer.properties</config>
+			<topic>ams5.log</topic>
+		</kafka>
+		
+		 <rabbitmq>
+            <name>ams_asset_update_producer</name>
+            <server>gaia_ams_rabbitmq_connection_pool</server>
+            <timeout>15000</timeout>
+            <queue>
+                <type>pub_sub</type>
+                <exchangeType>fanout</exchangeType>
+                <exchangeName>gaia.ams.asset.update</exchangeName>
+            </queue>
+        </rabbitmq>
+	</producers>
+
+	<cooperations>
+		<zookeeper>
+			<name>ams-zookeeper</name>
+			<servers>${ZOOKEEPER_SERVER}</servers>
+		</zookeeper>
+	</cooperations>
+
+	<lifecycles>
+		<handler>
+			<name>ams-handler</name>
+			<handle>gaia.ams.v5.AmsHandler</handle> <!-- handler class must implement HazelcastConfigPreparer -->
+			<bind>
+				<gateway>ams-zeromq-write-gateway</gateway>
+			</bind>
+
+			<variables>
+				<variable name="leaderElection" type="puObject">
+					<variable name="zookeeper" type="string">ams-zookeeper</variable>
+					<variable name="rootPath" type="string">/ams_leader_election
+					</variable>
+				</variable>
+
+				<variable name="writeGateway" type="string">ams-zeromq-write-gateway
+				</variable> <!-- config write gateway name -->
+				
+				<variable name="assetUpdateEnable" type="boolean">true</variable>
+				<variable name="dataLayer" type="puobject">
+					<variable name="hazelcast" type="string">ams-hazelcast</variable>
+
+					<variable name="mapStore" type="puobject">
+						<variable name="writeDelaySeconds" type="integer">1</variable>
+						<variable name="writeBatchSize" type="integer">100</variable>
+					</variable>
+
+					<variable name="storage" type="puObject">
+						<variable name="type" type="string">mysql</variable>
+						<variable name="datasource" type="string">ams-mysql-datasource
+						</variable>
+						<variable name="modelMapping" type="string">conf/mysql-model-mapping.properties
+						</variable>
+					</variable>
+				</variable>
+
+				<variable name="logger" type="puObject">
+					<variable name="class" type="string">gaia.ams.v5.logger.impl.KafkaTransactionLogger
+					</variable>
+					<variable name="initParams" type="puobject">
+						<variable name="producer" type="string">ams-kafka-transaction-log-producer
+						</variable>
+					</variable>
+				</variable>
+				<variable name="assetWriter" type="puobject">
+					<variable name="transactionManagerRBSize" type="integer">1024</variable>
+					<variable name="assetUpdateWriter" type="puobject">
+						<variable name="ringBufferSize" type="integer">4096</variable>
+						<variable name="applierWorkerSize" type="integer">3</variable>
+						<variable name="loggerWorkerSize" type="integer">3</variable>
+						<variable name="notifierWorkerSize" type="integer">3</variable>
+					</variable>
+				</variable>
+
+			</variables>
+		</handler>
+	</lifecycles>
+</mario>

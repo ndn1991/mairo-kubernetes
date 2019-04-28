@@ -1,0 +1,22 @@
+FROM ndn1991/mario:3.21.0
+
+ENV KAFKA_SERVER=localhost:9200
+ENV ENABLED_MANCENTER=false
+ENV MANCENTER_LINK=http://localhost:8082/mancenter
+ENV KUBERNETES_SERVIVES_ENABLE=false
+ENV KUBERNETES_SERVIVES_DNS=default_dns
+ENV MYSQL_HOST_PORT=localhost
+ENV MYSQL_USER=root
+ENV MYSQL_PASSWORD=admin
+ENV RABBIT_SERVER=localhost:5672
+ENV RABBIT_USER=root
+ENV RABBIT_PASSWORD=root
+ENV ZOOKEEPER_SERVER=localhost:2181
+ENV MYSQL_DATABASE=ams
+
+COPY ams-v5 /mario/extensions/ams-v5
+
+COPY etp.sh /
+RUN chmod +x /etp.sh
+
+ENTRYPOINT ["/bin/bash", "/etp.sh"]

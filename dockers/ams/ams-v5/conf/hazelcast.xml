@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.6.xsd" xmlns="http://www.hazelcast.com/schema/config"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<group>
+		<name>gaia-ams</name>
+		<password>gaia-ams-!@#456</password>
+	</group>
+
+	<management-center enabled="${ENABLED_MANCENTER}">${MANCENTER_LINK}</management-center>
+
+	<network>
+		<port auto-increment="true" port-count="100">5701</port>
+		<outbound-ports>
+			<!-- Allowed port range when connecting to other nodes. 0 or * means use system provided port. -->
+			<ports>0</ports>
+		</outbound-ports>
+		<join>
+			<multicast enabled="false">
+				<multicast-group>224.2.2.3</multicast-group>
+				<multicast-port>54327</multicast-port>
+			</multicast>
+			<kubernetes enabled="${KUBERNETES_SERVIVES_ENABLE}">
+				<service-dns>${KUBERNETES_SERVIVES_DNS}</service-dns>
+			</kubernetes>
+			<discovery-strategies>
+			</discovery-strategies>
+		</join>
+		<interfaces enabled="false">
+			
+		</interfaces>
+		<ssl enabled="false" />
+		<socket-interceptor enabled="false" />
+		<symmetric-encryption enabled="false">
+			<!-- encryption algorithm such as DES/ECB/PKCS5Padding, PBEWithMD5AndDES, AES/CBC/PKCS5Padding, Blowfish, DESede -->
+			<algorithm>PBEWithMD5AndDES</algorithm>
+			<!-- salt value to use when generating the secret key -->
+			<salt>thesalt</salt>
+			<!-- pass phrase to use when generating the secret key -->
+			<password>thepass</password>
+			<!-- iteration count to use when generating the secret key -->
+			<iteration-count>19</iteration-count>
+		</symmetric-encryption>
+	</network>
+	
+	<!-- <license-key>thisislicensekey</license-key>
+
+	<map name="gaia.ams5.assets">
+		<in-memory-format>NATIVE</in-memory-format>
+		<backup-count>1</backup-count>
+		<async-backup-count>0</async-backup-count>
+		<time-to-live-seconds>0</time-to-live-seconds>
+		<max-idle-seconds>93600</max-idle-seconds>
+		<eviction-policy>LRU</eviction-policy>
+		<max-size policy="PER_NODE">2000000</max-size>
+		<eviction-percentage>25</eviction-percentage>
+		<min-eviction-check-millis>100</min-eviction-check-millis>
+		<cache-deserialized-values>ALWAYS</cache-deserialized-values>
+	</map>
+	
+	<native-memory allocator-type="POOLED" enabled="true">
+		<size unit="GIGABYTES" value="2" />
+		<min-block-size>64</min-block-size>
+		<page-size>4194304</page-size>
+		<metadata-space-percentage>12.5</metadata-space-percentage>
+	</native-memory> -->
+
+</hazelcast>

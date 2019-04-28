@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gaia-ams
+spec:
+  ports:
+  - name: hazelcast
+    port: 5701
+  - name: zmq
+    port: 8888
+  selector:
+    app: gaia-ams
+  clusterIP: None
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: gaia-ams
+spec:
+  replicas: 3
+  minReadySeconds: 60
+  selector:
+    matchLabels:
+      app: gaia-ams
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: gaia-ams
+    spec:
+      containers:
+      - image: ndn1991/gaia-ams:5
+        imagePullPolicy: Always
+        name: gaia-ams
+        env:
+        - name: HEAP_SIZE
+          value: 256M
+        - name: KAFKA_SERVER
+          value: kafka-svc:9093
+        - name: KUBERNETES_SERVIVES_ENABLE
+          value: "true"
+        - name: KUBERNETES_SERVIVES_DNS
+          value: gaia-ams.default.svc.cluster.local
+        - name: MYSQL_HOST_PORT
+          value: mysql:3306
+        - name: MYSQL_USER
+          value: ams
+        - name: MYSQL_PASSWORD
+          value: amspass
+        - name: RABBIT_SERVER
+          value: rabbitmq-discovery:5672
+        - name: RABBIT_USER
+          value: guest
+        - name: RABBIT_PASSWORD
+          value: guest
+        - name: ZOOKEEPER_SERVER
+          value: zk-hs
+        - name: ENABLED_MANCENTER
+          value: "true"
+        - name: MANCENTER_LINK
+          value: 'http://mancenter-svc:8082/mancenter'
+        ports:
+        - containerPort: 5701
+          name: hazelcast
+        - containerPort: 8888
+          name: zmq
